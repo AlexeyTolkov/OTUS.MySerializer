@@ -1,12 +1,9 @@
 ﻿namespace OTUS.MySerializer
 {
-    public static partial class Serializer
+    enum CsvFieldsOrder
     {
-        enum CsvFieldsOrder
-        {
-            ClassMember = 0,
-            Name = 1,
-            Value =2
-        }
+        ClassMember = 0,
+        Name = 1,
+        Value =2
     }
 }

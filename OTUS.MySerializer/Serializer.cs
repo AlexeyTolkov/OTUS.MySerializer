@@ -8,10 +8,7 @@ namespace OTUS.MySerializer
     /// <summary> Serializer </summary>
     public static partial class Serializer
     {
-        private static string GetDelimeter()
-        {
-            return ";";
-        }
+        private const string delimeter = ";";
 
         /// <summary> Serialize from object to CSV </summary>
         /// <param name="obj">any object</param>
@@ -20,11 +17,10 @@ namespace OTUS.MySerializer
         {
             if (obj == null)
             {
-                return "";
+                throw new ArgumentNullException();
             }
 
             var csvResult = new StringBuilder();
-            var delimeter = GetDelimeter();
             Type type = obj.GetType();
 
             // Info about the type
@@ -34,8 +30,8 @@ namespace OTUS.MySerializer
             var fields = type.GetFields();
             foreach (var field in fields)
             {
-                csvResult.AppendLine($"{(int)ClassMembers.Field}" + delimeter
-                                   + $"{field.Name}" + delimeter
+                csvResult.AppendLine($"{(int)ClassMembers.Field}" + Serializer.delimeter
+                                   + $"{field.Name}" + Serializer.delimeter
                                    + $"{field.GetValue(obj)}");
             }
 
@@ -43,8 +39,8 @@ namespace OTUS.MySerializer
             var properties = type.GetProperties();
             foreach (var prop in properties)
             {
-                csvResult.AppendLine($"{(int)ClassMembers.Property}" + delimeter
-                                   + $"{prop.Name}" + delimeter
+                csvResult.AppendLine($"{(int)ClassMembers.Property}" + Serializer.delimeter
+                                   + $"{prop.Name}" + Serializer.delimeter
                                    + $"{prop.GetValue(obj)}");
             }
 
@@ -62,13 +58,33 @@ namespace OTUS.MySerializer
                 return null;
             }
 
-            var delimeter = GetDelimeter();
+            var classValidation = false;
+            var cons = type.GetConstructors();
+            foreach (var con in cons)
+            {
+                if (con.IsPublic && con.GetParameters().Length == 0)
+                {
+                    classValidation = true;
+                    break;
+                }
+            }
+
+            if (!classValidation)
+            { 
+                return null;
+            }
+
             object instance = null;
 
             using (var reader = new StringReader(csv))
             {
                 // create an instance of the type
                 instance = Activator.CreateInstance(type);
+                // TODO:
+                // Часто сериализаторы ограничивают дженерик так, чтобы принимал только классы с публичным конструктором без параметров where T: new()
+                // Так будет гарантия, что класс будет создан. Если же такого конструктора нет, то activator.CreateInstance ругнется,
+                // что не может создать инстанс класса именно из - за того, что нет нужных параметров для конструктора
+
 
                 var lineNo = 1;
                 for (string lineData = reader.ReadLine(); lineData != null; lineData = reader.ReadLine())
@@ -85,7 +101,7 @@ namespace OTUS.MySerializer
                         continue;
                     }
 
-                    var fields = lineData.Split(delimeter);
+                    var fields = lineData.Split(Serializer.delimeter);
                     var idx = (int)CsvFieldsOrder.ClassMember;
                     ClassMembers classMember = (ClassMembers)int.Parse(fields[idx]);
                     switch (classMember)
